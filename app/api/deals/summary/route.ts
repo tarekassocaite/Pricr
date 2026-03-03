@@ -3,6 +3,8 @@ import { NextResponse } from 'next/server';
 import { summarizeDealsByPriceBuckets } from '@/lib/deals/summary';
 import { getSupabaseServerClient } from '@/lib/supabase/server';
 
+export const dynamic = 'force-dynamic';
+
 export async function GET() {
   const supabase = getSupabaseServerClient();
   const { data, error } = await supabase.from('deals').select('amount, outcome');

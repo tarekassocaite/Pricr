@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
+import type { Route } from 'next';
 
 import './globals.css';
 
@@ -8,7 +9,7 @@ export const metadata: Metadata = {
   description: 'Deal intelligence and pricing ops app'
 };
 
-const links = [
+const links: Array<{ href: Route; label: string }> = [
   { href: '/onboarding', label: 'Onboarding' },
   { href: '/deals', label: 'Deals' },
   { href: '/clients', label: 'Clients' },

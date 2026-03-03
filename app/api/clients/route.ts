@@ -3,32 +3,42 @@ import { z } from 'zod';
 
 import { getSupabaseServerClient } from '@/lib/supabase/server';
 
-const clayEnrichmentSchema = z.object({
+const createClientSchema = z.object({
   domain: z.string().trim().min(1),
-  company_name: z.string().trim().optional(),
-  clay_signals: z.record(z.unknown()).default({}),
-  raw: z.record(z.unknown()).optional()
+  company_name: z.string().trim().optional()
 });
+
+export async function GET() {
+  try {
+    const supabase = getSupabaseServerClient();
+    const { data, error } = await supabase
+      .from('client_profiles')
+      .select('*')
+      .order('updated_at', { ascending: false });
+
+    if (error) {
+      return NextResponse.json({ error: error.message }, { status: 500 });
+    }
+
+    return NextResponse.json({ clients: data ?? [] });
+  } catch (error) {
+    return NextResponse.json(
+      { error: error instanceof Error ? error.message : 'Failed to load client profiles' },
+      { status: 500 }
+    );
+  }
+}
 
 export async function POST(request: Request) {
   try {
-    const json = await request.json().catch(() => null);
-    const parsed = clayEnrichmentSchema.safeParse(json);
+    const body = await request.json().catch(() => null);
+    const parsed = createClientSchema.safeParse(body);
 
     if (!parsed.success) {
       return NextResponse.json({ error: parsed.error.flatten() }, { status: 400 });
     }
 
-    const domain = parsed.data.domain.toLowerCase();
     const supabase = getSupabaseServerClient();
-
-    const mergedSignals = parsed.data.raw
-      ? {
-          ...parsed.data.clay_signals,
-          raw: parsed.data.raw
-        }
-      : parsed.data.clay_signals;
-
     const { data, error } = await supabase
       .from('client_profiles')
       // Supabase generated types in this repo currently infer never for upsert values.
@@ -36,10 +46,9 @@ export async function POST(request: Request) {
       // @ts-expect-error Pending generated type fix.
       .upsert(
         {
-          domain,
+          domain: parsed.data.domain.toLowerCase(),
           company_name: parsed.data.company_name ?? null,
-          status: 'ready',
-          clay_signals: mergedSignals
+          status: 'pending'
         },
         { onConflict: 'domain' }
       )
@@ -50,13 +59,10 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: error.message }, { status: 500 });
     }
 
-    return NextResponse.json({
-      profile: data,
-      message: 'Enrichment payload saved and client marked ready.'
-    });
+    return NextResponse.json({ client: data });
   } catch (error) {
     return NextResponse.json(
-      { error: error instanceof Error ? error.message : 'Failed to ingest enrichment payload' },
+      { error: error instanceof Error ? error.message : 'Failed to create pending client profile' },
       { status: 500 }
     );
   }

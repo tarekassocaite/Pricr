@@ -44,6 +44,7 @@ interface RowError {
 
 interface ImportResponse {
   importedRows: number;
+  pendingProfilesQueued?: number;
   validRows: number;
   invalidRows: number;
   rowErrors: RowError[];
@@ -200,7 +201,9 @@ export function DealsWorkbench() {
       const parsed = body as ImportResponse;
       setPreviewRows(parsed.previewRows);
       setRowErrors(parsed.rowErrors);
-      setMessage(`${parsed.message} Imported ${parsed.importedRows} row(s).`);
+      setMessage(
+        `${parsed.message} Imported ${parsed.importedRows} row(s). Pending client profiles queued: ${parsed.pendingProfilesQueued ?? 0}.`
+      );
       await loadDeals();
     } catch (error) {
       setErrorMessage(error instanceof Error ? error.message : 'Failed to import CSV');
@@ -245,7 +248,10 @@ export function DealsWorkbench() {
       <Card>
         <CardHeader>
           <CardTitle className="text-xl">CSV Upload</CardTitle>
-          <CardDescription>Upload a deals CSV, review preview rows, and fix row-level errors before import.</CardDescription>
+          <CardDescription>
+            Upload a deals CSV, review preview rows, and fix row-level errors before import. Valid domains are queued for Clay
+            enrichment.
+          </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="grid gap-3 sm:grid-cols-[1fr_auto_auto] sm:items-end">

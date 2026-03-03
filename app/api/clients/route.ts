@@ -8,13 +8,18 @@ const createClientSchema = z.object({
   company_name: z.string().trim().optional()
 });
 
-export async function GET() {
+export async function GET(request: Request) {
   try {
+    const url = new URL(request.url);
+    const statusParam = url.searchParams.get('status');
+    const status = statusParam === 'pending' || statusParam === 'ready' ? statusParam : null;
+
     const supabase = getSupabaseServerClient();
-    const { data, error } = await supabase
-      .from('client_profiles')
-      .select('*')
-      .order('updated_at', { ascending: false });
+    let query = supabase.from('client_profiles').select('*').order('updated_at', { ascending: false });
+    if (status) {
+      query = query.eq('status', status);
+    }
+    const { data, error } = await query;
 
     if (error) {
       return NextResponse.json({ error: error.message }, { status: 500 });

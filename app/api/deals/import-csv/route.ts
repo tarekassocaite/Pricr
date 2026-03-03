@@ -89,7 +89,7 @@ export async function POST(request: Request) {
         currency: validated.currency,
         outcome: validated.outcome,
         description: validated.description,
-        client_domain: validated.client_domain,
+        client_domain: validated.client_domain.toLowerCase(),
         offering_id: validated.offering_id || null
       });
 
@@ -157,13 +157,32 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 
+  const uniqueDomains = Array.from(new Set(validDeals.map((deal) => deal.client_domain)));
+  const pendingProfiles = uniqueDomains.map((domain) => ({
+    domain,
+    company_name: null,
+    status: 'pending' as const
+  }));
+
+  const { error: profileInsertError } = await supabase
+    .from('client_profiles')
+    // Supabase generated types in this repo currently infer never for insert values.
+    // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+    // @ts-expect-error Pending generated type fix.
+    .insert(pendingProfiles, { ignoreDuplicates: true });
+
+  if (profileInsertError) {
+    return NextResponse.json({ error: profileInsertError.message }, { status: 500 });
+  }
+
   return NextResponse.json({
     importedRows: insertedRows?.length ?? validDeals.length,
+    pendingProfilesQueued: uniqueDomains.length,
     validRows: validDeals.length,
     invalidRows: rowErrors.length,
     columns: headers,
     rowErrors,
     previewRows,
-    message: 'CSV import completed.'
+    message: 'CSV import completed. Client domains queued for Clay enrichment.'
   });
 }

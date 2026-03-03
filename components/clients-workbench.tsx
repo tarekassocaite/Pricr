@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -37,6 +37,7 @@ export function ClientsWorkbench() {
   const [jsonText, setJsonText] = useState('');
   const [savingPending, setSavingPending] = useState(false);
   const [savingEnrichment, setSavingEnrichment] = useState(false);
+  const [origin, setOrigin] = useState('');
 
   async function loadClients() {
     setLoading(true);
@@ -55,6 +56,7 @@ export function ClientsWorkbench() {
 
   useEffect(() => {
     void loadClients();
+    setOrigin(window.location.origin);
   }, []);
 
   async function createPendingClient() {
@@ -120,8 +122,54 @@ export function ClientsWorkbench() {
     }
   }
 
+  async function copyMcpRunbook() {
+    const runbook = `Use Clay MCP to enrich these pending client domains:\n${pendingDomains.join('\n')}\n\nFor each domain, POST to ${origin}/api/clients/enrichment with JSON:\n{\n  "domain": "<domain>",\n  "company_name": "<optional>",\n  "clay_signals": {\n    "employees": <number>,\n    "region": "<string>",\n    "funding_stage": "<string>",\n    "industry": "<string>",\n    "growth_signal": "<string>"\n  },\n  "raw": {}\n}`;
+    try {
+      await navigator.clipboard.writeText(runbook);
+      setMessage('Clay MCP runbook copied to clipboard.');
+      setError(null);
+    } catch {
+      setError('Unable to copy to clipboard. Copy the runbook text manually.');
+    }
+  }
+
+  const pendingDomains = useMemo(
+    () =>
+      clients
+        .filter((client) => client.status === 'pending')
+        .map((client) => client.domain)
+        .sort((a, b) => a.localeCompare(b)),
+    [clients]
+  );
+
   return (
     <div className="space-y-6">
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-xl">Clay MCP enrichment queue</CardTitle>
+          <CardDescription>Pending domains are ready for Clay MCP enrichment.</CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          {pendingDomains.length === 0 ? (
+            <p className="text-sm text-muted-foreground">No pending domains. Import deals or add a client domain first.</p>
+          ) : (
+            <>
+              <p className="text-sm">
+                Pending domains: <span className="font-medium">{pendingDomains.length}</span>
+              </p>
+              <div className="max-h-36 overflow-auto rounded-md border bg-muted/20 p-3 text-sm">
+                {pendingDomains.map((item) => (
+                  <div key={item}>{item}</div>
+                ))}
+              </div>
+              <Button type="button" variant="outline" onClick={() => void copyMcpRunbook()}>
+                Copy Clay MCP runbook
+              </Button>
+            </>
+          )}
+        </CardContent>
+      </Card>
+
       <Card>
         <CardHeader>
           <CardTitle className="text-xl">Client profile setup</CardTitle>

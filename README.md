@@ -49,12 +49,16 @@ npm run dev
 
 1. Go to `/onboarding` and save agency settings + offerings.
 2. Go to `/deals`, upload `sample-data/deals.csv`, preview, then import.
-3. Go to `/clients`, create a pending profile, then use **Paste enrichment JSON** or **Use mock enrichment**.
-4. Go to `/dashboard`, run pricing, inspect explainability, and click **Use in documents** on a package.
-5. Go to `/documents`, generate Proposal or SOW and review markdown preview.
+3. CSV import automatically creates pending `client_profiles` from `client_domain` values.
+4. Use Clay MCP in Cursor to enrich pending domains, then POST results to `/api/clients/enrichment`.
+5. Go to `/clients` to verify status is `ready` and signals are stored (JSON paste fallback is also available).
+6. Go to `/dashboard`, run pricing, inspect explainability, and click **Use in documents** on a package.
+7. Go to `/documents`, generate Proposal or SOW and review markdown preview.
 
 ## Notes
 
 - Pricing output is deterministic. LLM features are optional.
+- Clay MCP is agent-side only. Backend never calls Clay directly.
+- `GET /api/clients?status=pending` returns the Clay enrichment queue.
 - SOW disclaimer: **Not legal advice. Review required.**
 - Model disclaimer: **Pricing guidance based on your inputs and historical patterns.**

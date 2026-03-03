@@ -71,8 +71,11 @@ export async function POST(request: Request) {
     if (existingAgencyError) throw existingAgencyError;
     const existingAgencySettings = existingAgencySettingsRaw as { id: string } | null;
 
-    const { data: savedAgencySettings, error: agencyUpsertError } = await (supabase
-      .from('agency_settings') as any)
+    const { data: savedAgencySettings, error: agencyUpsertError } = await supabase
+      .from('agency_settings')
+      // Supabase generated types in this repo currently infer never for upsert values.
+      // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+      // @ts-expect-error Pending generated type fix.
       .upsert(
         {
           id: existingAgencySettings?.id,
@@ -115,9 +118,14 @@ export async function POST(request: Request) {
           }) satisfies TableInsert<'offerings'>
       );
 
-      const { error: offeringsUpsertError } = await (supabase.from('offerings') as any).upsert(offeringRows, {
-        onConflict: 'id'
-      });
+      const { error: offeringsUpsertError } = await supabase
+        .from('offerings')
+        // Supabase generated types in this repo currently infer never for upsert values.
+        // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+        // @ts-expect-error Pending generated type fix.
+        .upsert(offeringRows, {
+          onConflict: 'id'
+        });
 
       if (offeringsUpsertError) throw offeringsUpsertError;
     }

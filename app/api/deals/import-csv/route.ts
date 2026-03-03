@@ -157,7 +157,12 @@ export async function POST(request: Request) {
 
   if (validDeals.length > 0) {
     const supabase = getSupabaseServerClient();
-    const { error } = await supabase.from('deals').insert(validDeals);
+    const { error } = await supabase
+      .from('deals')
+      // Supabase generated types in this repo currently infer never for insert values.
+      // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+      // @ts-expect-error Pending generated type fix.
+      .insert(validDeals);
 
     if (error) {
       return NextResponse.json({ error: error.message }, { status: 500 });

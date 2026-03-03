@@ -189,6 +189,9 @@ export async function POST(request: Request) {
     for (const classification of output.classifications) {
       const { error } = await supabase
         .from('deals')
+        // Supabase generated types in this repo currently infer never for update values.
+        // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+        // @ts-expect-error Pending generated type fix.
         .update({ offering_id: classification.offering_id })
         .eq('id', classification.deal_id);
 
